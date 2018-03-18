@@ -1,0 +1,38 @@
+version: '2'
+services:
+  mariadb:
+    image: 'bitnami/mariadb:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - 'mariadb_data:/bitnami'
+  phabricator:
+    build:
+      context: './phabricator-alpine'
+    volumes:
+      - phabricator_data:/shared
+      - app-volume:/app
+    environment:
+      - MYSQL_HOST=mariadb
+    restart: on-failure      
+    depends_on:
+      - mariadb
+  phabricator.test:
+    image: nginx:alpine
+    volumes:
+      - ./compose/site.conf:/etc/nginx/conf.d/default.conf:ro
+      - app-volume:/app:ro
+    restart: on-failure
+    ports:
+      - 80:80
+    depends_on:
+      - phabricator
+  buildlsave:
+    build:
+      context: './drydocker'
+volumes:
+  mariadb_data:
+    driver: local
+  phabricator_data:
+    driver: local
+  app-volume:
